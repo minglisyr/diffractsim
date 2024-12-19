@@ -1,15 +1,14 @@
 import diffractsim
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import os
+from PIL import Image
+import glob
 
-diffractsim.set_backend("CPU")
+diffractsim.set_backend("CPU")  # Change to "CUDA" for GPU acceleration
 
 from diffractsim import PolychromaticField, ApertureFromImage, cf, mm, cm
 
-# Set up dark theme for matplotlib
-plt.style.use('dark_background')
-
+# Create the polychromatic field
 F = PolychromaticField(
     spectrum=1.5 * cf.illuminant_d65,
     extent_x=20 * mm,
@@ -18,36 +17,34 @@ F = PolychromaticField(
     Ny=1600,
 )
 
+# Add the aperture
 F.add(ApertureFromImage("./apertures/gates_logo.jpg", image_size=(15 * mm, 15 * mm), simulation=F))
 
-# Create a figure and axis for the animation with dark background
-fig, ax = plt.subplots(facecolor='black')
-ax.set_facecolor('black')
+# Create the 'test' folder if it doesn't exist
+os.makedirs('test', exist_ok=True)
 
-# Initialize the plot
-im = ax.imshow(np.zeros((1600, 1600, 3)), extent=[-10*mm, 10*mm, -10*mm, 10*mm])
-
-# Customize axis and title colors
-ax.tick_params(colors='white')
-ax.set_xlabel('X (mm)', color='white')
-ax.set_ylabel('Y (mm)', color='white')
-
-# Animation update function
-def update(frame):
-    z = frame * 50 * cm
-    F.propagate(z=z)
+for i in range(150):
+    # Propagate the field
+    F.propagate(z=1*cm)
     rgb = F.get_colors()
-    im.set_array(rgb)
-    
-    # White text for title
-    ax.set_title(f"Z = {z/cm:.0f} cm", color='white')
+    # Plot the colors
+    F.plot_colors(rgb, xlim=[-10*mm, 10*mm], ylim=[-10*mm, 10*mm], units=mm, dark_background=True, savefile=f'test/neo_{i+1:03d}')
 
-    return [im]
+# Define the path to the directory containing the PNG files
+image_folder = 'test'
+# Get all PNG files in the folder and sort them numerically
+images = sorted(glob.glob(os.path.join(image_folder, '*.png')), key=lambda x: int(os.path.basename(x).split('_')[1].split('.')[0]))
 
-# Create the animation
-anim = FuncAnimation(fig, update, frames=4, interval=1000, blit=True)
+# Create a list to hold the frames
+frames = []
 
-# Save the animation as a gif
-anim.save("../images/gates_logo_animated.gif", writer="pillow")
+# Open each image and append it to the frames list
+for image in images:
+    new_frame = Image.open(image)
+    frames.append(new_frame)
 
-plt.close(fig)
+# Save into a GIF file that loops forever with a duration of 1000 ms (1 second) per frame
+gif_path = 'test/output.gif'
+frames[0].save(gif_path, format='GIF', append_images=frames[1:], save_all=True, duration=1000, loop=0)
+
+print(f"GIF saved as {gif_path}")
