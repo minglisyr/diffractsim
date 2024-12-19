@@ -12,7 +12,7 @@ All rights reserved.
 
 """
 
-def plot_colors(self, rgb, figsize=(6, 6), xlim=None, ylim=None, text = None, units = mm, dark_background = False):
+def plot_colors(self, rgb, figsize=(6, 6), xlim=None, ylim=None, text = None, units = mm, dark_background = False, savefile = None):
     """visualize the diffraction pattern colors with matplotlib"""
 
     from ..util.backend_functions import backend as bd
@@ -52,7 +52,7 @@ def plot_colors(self, rgb, figsize=(6, 6), xlim=None, ylim=None, text = None, un
         ax.set_ylabel("[m]")
 
     if text == None:
-        ax.set_title("Screen distance = " + str(self.z * 100) + " cm")
+        ax.set_title("Screen distance = " + str(round(self.z * 100,1)) + " cm")
     else: 
         ax.set_title(text)
 
@@ -66,4 +66,8 @@ def plot_colors(self, rgb, figsize=(6, 6), xlim=None, ylim=None, text = None, un
         ],
         interpolation="spline36", origin = "lower"
     )
-    plt.show()
+    if savefile != None:
+        plt.savefig(f'{savefile}.png')
+        plt.close()
+    else:
+        plt.show()
